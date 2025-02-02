@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.3](https://github.com/SoferAi/web-extension/compare/v1.0.2...v1.0.3) (2025-02-02)
+
+
+### Bug Fixes
+
+* **deps:** update dependency webext-options-sync to v4.3.0 ([#15](https://github.com/SoferAi/web-extension/issues/15)) ([50483bd](https://github.com/SoferAi/web-extension/commit/50483bd07cd9fb5aec1957df249edbf212f0bc6e))
+* versioning ([#17](https://github.com/SoferAi/web-extension/issues/17)) ([70f8fdc](https://github.com/SoferAi/web-extension/commit/70f8fdc2bf751fdacc211d1bd2c9079da4273e91))
+
 ## [1.0.2](https://github.com/SoferAi/web-extension/compare/v1.0.1...v1.0.2) (2025-02-02)
 
 
