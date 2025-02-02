@@ -1,6 +1,6 @@
 {
 	"private": true,
-	"version": "1.0.3",
+	"version": "1.0.4",
 	"scripts": {
 		"start": "parcel watch src/manifest.json --host localhost --config @parcel/config-webextension",
 		"build": "NODE_NO_WARNINGS=1 parcel build",
