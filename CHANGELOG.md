@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.4](https://github.com/SoferAi/web-extension/compare/v1.0.3...v1.0.4) (2025-02-02)
+
+
+### Bug Fixes
+
+* pnpm ([#19](https://github.com/SoferAi/web-extension/issues/19)) ([ab938f0](https://github.com/SoferAi/web-extension/commit/ab938f031522a4f0507c5bea73f8cf6f768f365a))
+
 ## [1.0.3](https://github.com/SoferAi/web-extension/compare/v1.0.2...v1.0.3) (2025-02-02)
 
 
