@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.2](https://github.com/SoferAi/web-extension/compare/v1.0.1...v1.0.2) (2025-02-02)
+
+
+### Bug Fixes
+
+* pnpm lockfile ([#12](https://github.com/SoferAi/web-extension/issues/12)) ([f2a2d51](https://github.com/SoferAi/web-extension/commit/f2a2d511434a58f6bf44ba5b6b01c0d92b4f4288))
+
 ## [1.0.1](https://github.com/SoferAi/web-extension/compare/v1.0.0...v1.0.1) (2025-02-02)
 
 
