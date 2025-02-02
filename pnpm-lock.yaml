@@ -9,7 +9,7 @@ importers:
   .:
     dependencies:
       webext-base-css:
-        specifier: ^2.0.1
+        specifier: ^2.1.0
         version: 2.1.0
       webext-options-sync:
         specifier: ^4.2.3
