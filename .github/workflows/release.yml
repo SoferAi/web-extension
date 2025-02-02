@@ -12,7 +12,7 @@ name: release-please
 
 env:
   DIRECTORY: distribution
-  PROJECT_NAME: extension
+  PROJECT_NAME: soferai-web-extension
 
 jobs:
   release-please:
@@ -70,7 +70,7 @@ jobs:
         run: pnpm install --frozen-lockfile
         
       - name: Update manifest version
-        run: pnpm dlx dot-json@1 "${{ env.DIRECTORY }}/manifest.json" version "${{ needs.release-please.outputs.version }}"
+        run: pnpm dlx dot-json@1 "src/manifest.json" version "${{ needs.release-please.outputs.version }}"
         
       - name: Build extension
         run: pnpm run build
