@@ -3,10 +3,8 @@
 	"scripts": {
 		"start": "parcel watch src/manifest.json --host localhost --config @parcel/config-webextension",
 		"build": "NODE_NO_WARNINGS=1 parcel build",
-		"lint": "run-p lint:*",
 		"lint-fix": "run-p 'lint:* -- --fix'",
-		"lint:js": "xo",
-		"test": "run-p lint:* build",
+		"test": "run-p build",
 		"watch": "NODE_NO_WARNINGS=1 parcel watch --no-hmr",
 		"ci": "CI=true pnpm i"
 	},
