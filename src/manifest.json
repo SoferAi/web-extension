@@ -1,7 +1,7 @@
 {
 	"$schema": "https://json.schemastore.org/chrome-manifest",
 	"name": "Sofer.Ai",
-	"version": "0.0.0",
+	"version": "1.0.8",
 	"description": "Sofer.Ai is a browser extension that allows you to transcribe audio and video files.",
 	"homepage_url": "https://github.com/SoferAi/web-extension",
 	"manifest_version": 3,
