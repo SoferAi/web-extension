@@ -100,6 +100,11 @@ jobs:
     permissions:
       contents: read
     steps:
+      - uses: pnpm/action-setup@v4
+        with:
+          version: latest
+          run_install: false
+
       - uses: actions/download-artifact@v4
         with:
           name: extension-dist
@@ -121,6 +126,11 @@ jobs:
     permissions:
       contents: read
     steps:
+      - uses: pnpm/action-setup@v4
+        with:
+          version: latest
+          run_install: false
+
       - uses: actions/download-artifact@v4
         with:
           name: extension-dist
