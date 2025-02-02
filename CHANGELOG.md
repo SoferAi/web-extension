@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.7](https://github.com/SoferAi/web-extension/compare/v1.0.6...v1.0.7) (2025-02-02)
+
+
+### Bug Fixes
+
+* add pnpm to upload steps ([#25](https://github.com/SoferAi/web-extension/issues/25)) ([f8a8579](https://github.com/SoferAi/web-extension/commit/f8a857933d167529a077b5ad179857f4298a7b17))
+
 ## [1.0.6](https://github.com/SoferAi/web-extension/compare/v1.0.5...v1.0.6) (2025-02-02)
 
 
