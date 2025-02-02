@@ -22,7 +22,7 @@ importers:
         specifier: ^2.13.0
         version: 2.13.3(@parcel/core@2.13.3(@swc/helpers@0.5.15))
       npm-run-all2:
-        specifier: ^7.0.1
+        specifier: ^7.0.2
         version: 7.0.2
       parcel:
         specifier: ^2.13.0
