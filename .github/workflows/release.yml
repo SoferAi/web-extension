@@ -1,0 +1,132 @@
+# yamllint disable rule:line-length
+"on":
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+name: release-please
+
+env:
+  DIRECTORY: distribution
+  PROJECT_NAME: extension
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+      version: ${{ steps.release.outputs.version }}
+
+    steps:
+      - name: Generate a token
+        id: generate-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.SOFERAI_BOT_CLIENT_ID }}
+          private-key: ${{ secrets.SOFERAI_BOT_PRIVATE_SIGNING_KEY }}
+
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          token: ${{ steps.generate-token.outputs.token }}
+          release-type: node
+          target-branch: ${{ github.ref_name }}
+          
+  build:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-node@v3
+        with:
+          node-version-file: .nvmrc
+      
+      - uses: pnpm/action-setup@v3
+        with:
+          version: latest
+          run_install: false
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - uses: actions/cache@v4
+        name: Setup pnpm cache
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+          
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        
+      - name: Update manifest version
+        run: pnpm dlx dot-json@1 "${{ env.DIRECTORY }}/manifest.json" version "${{ needs.release-please.outputs.version }}"
+        
+      - name: Build extension
+        run: pnpm run build
+        
+      - name: Create release asset
+        run: |
+          cd ${{ env.DIRECTORY }}
+          zip -r "../${{ env.PROJECT_NAME }}-${{ needs.release-please.outputs.version }}.zip" ./*
+          
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: extension-dist
+          path: ${{ env.DIRECTORY }}
+          
+      - name: Upload to release
+        env:
+          GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
+        run: |
+          gh release upload ${{ needs.release-please.outputs.tag_name }} "${{ env.PROJECT_NAME }}-${{ needs.release-please.outputs.version }}.zip"
+
+  chrome-store:
+    needs: [release-please, build]
+    if: ${{ needs.release-please.outputs.release_created }}
+    name: Publish to Chrome Web Store
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: extension-dist
+          
+      - name: Upload to Chrome Web Store
+        run: pnpm dlx chrome-webstore-upload-cli@3 upload --auto-publish
+        env:
+          EXTENSION_ID: ${{ secrets.EXTENSION_ID }}
+          CLIENT_ID: ${{ secrets.CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+          REFRESH_TOKEN: ${{ secrets.REFRESH_TOKEN }}
+
+  firefox-store:
+    needs: [release-please, build]
+    if: ${{ needs.release-please.outputs.release_created }}
+    name: Publish to Firefox Add-ons
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: extension-dist
+          
+      - name: Sign and submit to Firefox Add-ons
+        run: pnpm dlx web-ext@7 sign --use-submission-api --channel listed
+        env:
+          WEB_EXT_API_KEY: ${{ secrets.WEB_EXT_API_KEY }}
+          WEB_EXT_API_SECRET: ${{ secrets.WEB_EXT_API_SECRET }}

@@ -1,0 +1,25 @@
+{
+	"$schema": "https://json.schemastore.org/chrome-manifest",
+	"name": "Sofer.Ai",
+	"version": "0.0.0",
+	"description": "Sofer.Ai is a browser extension that allows you to transcribe audio and video files.",
+	"homepage_url": "https://github.com/SoferAi/web-extension",
+	"manifest_version": 3,
+	"minimum_chrome_version": "121",
+	"browser_specific_settings": {
+		"gecko": {
+			"id": "support@sofer.ai",
+			"strict_min_version": "121.0"
+		}
+	},
+	"icons": {
+		"128": "icon.png"
+	},
+	"host_permissions": [
+		"https://github.com/*",
+		"https://www.yutorah.org/*"
+	],
+	"action": {
+		"default_popup": "popup.html"
+	}
+}
