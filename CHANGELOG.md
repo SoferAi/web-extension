@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.1](https://github.com/SoferAi/web-extension/compare/v1.0.0...v1.0.1) (2025-02-02)
+
+
+### Bug Fixes
+
+* deploy stuff ([#8](https://github.com/SoferAi/web-extension/issues/8)) ([0722986](https://github.com/SoferAi/web-extension/commit/0722986edb686c518c9a2af09a4fc638d911d154))
+* **deps:** update dependency webext-base-css to v2.1.0 ([#10](https://github.com/SoferAi/web-extension/issues/10)) ([17ef444](https://github.com/SoferAi/web-extension/commit/17ef444b4e3ba93671fac3966313461f059b7af9))
+
 ## 1.0.0 (2025-02-02)
 
 
