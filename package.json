@@ -31,7 +31,7 @@
 		"@parcel/resolver-default": "^2.13.0",
 		"npm-run-all2": "^7.0.1",
 		"parcel": "^2.13.0",
-		"xo": "^0.59.3"
+		"xo": "^0.60.0"
 	},
 	"@parcel/resolver-default": {
 		"packageExports": true

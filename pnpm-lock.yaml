@@ -9,7 +9,7 @@ importers:
   .:
     dependencies:
       webext-base-css:
-        specifier: ^2.1.0
+        specifier: ^2.0.1
         version: 2.1.0
       webext-options-sync:
         specifier: ^4.2.3
@@ -28,8 +28,8 @@ importers:
         specifier: ^2.13.0
         version: 2.13.3(@swc/helpers@0.5.15)(postcss@8.5.1)(terser@5.37.0)(typescript@5.7.3)
       xo:
-        specifier: ^0.59.3
-        version: 0.59.3(@types/eslint@9.6.1)(webpack@5.97.1)
+        specifier: ^0.60.0
+        version: 0.60.0(@types/eslint@9.6.1)(webpack@5.97.1)
 
 packages:
 
@@ -1267,8 +1267,8 @@ packages:
     peerDependencies:
       eslint: ^7.0.0 || ^8.0.0 || ^9.0.0
 
-  eslint-plugin-unicorn@54.0.0:
-    resolution: {integrity: sha512-XxYLRiYtAWiAjPv6z4JREby1TAE2byBC7wlh0V4vWDCpccOSU1KovWV//jqPXF6bq3WKxqX9rdjoRQ1EhdmNdQ==}
+  eslint-plugin-unicorn@56.0.1:
+    resolution: {integrity: sha512-FwVV0Uwf8XPfVnKSGpMg7NtlZh0G0gBarCaFcMUOoqPxXryxdYxTRRv4kH6B9TFCVIrjRXG+emcxIk2ayZilog==}
     engines: {node: '>=18.18'}
     peerDependencies:
       eslint: '>=8.56.0'
@@ -2773,9 +2773,9 @@ packages:
   wrappy@1.0.2:
     resolution: {integrity: sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==}
 
-  xo@0.59.3:
-    resolution: {integrity: sha512-jjUplAF4kqNP22HIlgnW+Ej8/Z1utf4Mzw/dLsbOcSpnUgrEqcyaS/OhGFriFyEBbnWVkslnYgUHiDsb6lNiBQ==}
-    engines: {node: '>=18'}
+  xo@0.60.0:
+    resolution: {integrity: sha512-Il6Ap/bkYQm2CvocfiNY8yR52OospMdlxwbT2V/8KBRRCc+JKI1ARyFJpemuze9ZHBy/AAaDurjqWNj0C2DCYQ==}
+    engines: {node: '>=18.18'}
     hasBin: true
     peerDependencies:
       webpack: '>=1.11.0'
@@ -4315,7 +4315,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-import-resolver-webpack@0.13.10(eslint-plugin-import@2.31.0(@typescript-eslint/parser@7.18.0(eslint@8.57.1)(typescript@5.7.3))(eslint@8.57.1))(webpack@5.97.1):
+  eslint-import-resolver-webpack@0.13.10(eslint-plugin-import@2.31.0)(webpack@5.97.1):
     dependencies:
       debug: 3.2.7
       enhanced-resolve: 0.9.1
@@ -4332,14 +4332,14 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-module-utils@2.12.0(@typescript-eslint/parser@7.18.0(eslint@8.57.1)(typescript@5.7.3))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-webpack@0.13.10(eslint-plugin-import@2.31.0(@typescript-eslint/parser@7.18.0(eslint@8.57.1)(typescript@5.7.3))(eslint@8.57.1))(webpack@5.97.1))(eslint@8.57.1):
+  eslint-module-utils@2.12.0(@typescript-eslint/parser@7.18.0(eslint@8.57.1)(typescript@5.7.3))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-webpack@0.13.10)(eslint@8.57.1):
     dependencies:
       debug: 3.2.7
     optionalDependencies:
       '@typescript-eslint/parser': 7.18.0(eslint@8.57.1)(typescript@5.7.3)
       eslint: 8.57.1
       eslint-import-resolver-node: 0.3.9
-      eslint-import-resolver-webpack: 0.13.10(eslint-plugin-import@2.31.0(@typescript-eslint/parser@7.18.0(eslint@8.57.1)(typescript@5.7.3))(eslint@8.57.1))(webpack@5.97.1)
+      eslint-import-resolver-webpack: 0.13.10(eslint-plugin-import@2.31.0)(webpack@5.97.1)
     transitivePeerDependencies:
       - supports-color
 
@@ -4379,7 +4379,7 @@ snapshots:
       doctrine: 2.1.0
       eslint: 8.57.1
       eslint-import-resolver-node: 0.3.9
-      eslint-module-utils: 2.12.0(@typescript-eslint/parser@7.18.0(eslint@8.57.1)(typescript@5.7.3))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-webpack@0.13.10(eslint-plugin-import@2.31.0(@typescript-eslint/parser@7.18.0(eslint@8.57.1)(typescript@5.7.3))(eslint@8.57.1))(webpack@5.97.1))(eslint@8.57.1)
+      eslint-module-utils: 2.12.0(@typescript-eslint/parser@7.18.0(eslint@8.57.1)(typescript@5.7.3))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-webpack@0.13.10)(eslint@8.57.1)
       hasown: 2.0.2
       is-core-module: 2.16.1
       is-glob: 4.0.3
@@ -4430,16 +4430,16 @@ snapshots:
     dependencies:
       eslint: 8.57.1
 
-  eslint-plugin-unicorn@54.0.0(eslint@8.57.1):
+  eslint-plugin-unicorn@56.0.1(eslint@8.57.1):
     dependencies:
       '@babel/helper-validator-identifier': 7.25.9
       '@eslint-community/eslint-utils': 4.4.1(eslint@8.57.1)
-      '@eslint/eslintrc': 3.2.0
       ci-info: 4.1.0
       clean-regexp: 1.0.0
       core-js-compat: 3.40.0
       eslint: 8.57.1
       esquery: 1.6.0
+      globals: 15.14.0
       indent-string: 4.0.0
       is-builtin-module: 3.2.1
       jsesc: 3.1.0
@@ -4449,8 +4449,6 @@ snapshots:
       regjsparser: 0.10.0
       semver: 7.7.0
       strip-indent: 3.0.0
-    transitivePeerDependencies:
-      - supports-color
 
   eslint-rule-docs@1.1.235: {}
 
@@ -6003,7 +6001,7 @@ snapshots:
 
   wrappy@1.0.2: {}
 
-  xo@0.59.3(@types/eslint@9.6.1)(webpack@5.97.1):
+  xo@0.60.0(@types/eslint@9.6.1)(webpack@5.97.1):
     dependencies:
       '@eslint/eslintrc': 3.2.0
       '@typescript-eslint/eslint-plugin': 7.18.0(@typescript-eslint/parser@7.18.0(eslint@8.57.1)(typescript@5.7.3))(eslint@8.57.1)(typescript@5.7.3)
@@ -6016,7 +6014,7 @@ snapshots:
       eslint-config-xo: 0.45.0(eslint@8.57.1)
       eslint-config-xo-typescript: 5.0.0(@typescript-eslint/eslint-plugin@7.18.0(@typescript-eslint/parser@7.18.0(eslint@8.57.1)(typescript@5.7.3))(eslint@8.57.1)(typescript@5.7.3))(@typescript-eslint/parser@7.18.0(eslint@8.57.1)(typescript@5.7.3))(eslint@8.57.1)(typescript@5.7.3)
       eslint-formatter-pretty: 6.0.1
-      eslint-import-resolver-webpack: 0.13.10(eslint-plugin-import@2.31.0(@typescript-eslint/parser@7.18.0(eslint@8.57.1)(typescript@5.7.3))(eslint@8.57.1))(webpack@5.97.1)
+      eslint-import-resolver-webpack: 0.13.10(eslint-plugin-import@2.31.0)(webpack@5.97.1)
       eslint-plugin-ava: 14.0.0(eslint@8.57.1)
       eslint-plugin-eslint-comments: 3.2.0(eslint@8.57.1)
       eslint-plugin-import: 2.31.0(@typescript-eslint/parser@7.18.0(eslint@8.57.1)(typescript@5.7.3))(eslint-import-resolver-webpack@0.13.10)(eslint@8.57.1)
@@ -6024,7 +6022,7 @@ snapshots:
       eslint-plugin-no-use-extend-native: 0.5.0
       eslint-plugin-prettier: 5.2.3(@types/eslint@9.6.1)(eslint-config-prettier@9.1.0(eslint@8.57.1))(eslint@8.57.1)(prettier@3.4.2)
       eslint-plugin-promise: 6.6.0(eslint@8.57.1)
-      eslint-plugin-unicorn: 54.0.0(eslint@8.57.1)
+      eslint-plugin-unicorn: 56.0.1(eslint@8.57.1)
       esm-utils: 4.3.0
       find-cache-dir: 5.0.0
       find-up-simple: 1.0.0
