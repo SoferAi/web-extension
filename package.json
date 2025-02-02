@@ -3,10 +3,8 @@
 	"scripts": {
 		"start": "parcel watch src/manifest.json --host localhost --config @parcel/config-webextension",
 		"build": "NODE_NO_WARNINGS=1 parcel build",
-		"lint": "run-p lint:*",
 		"lint-fix": "run-p 'lint:* -- --fix'",
-		"lint:js": "xo",
-		"test": "run-p lint:* build",
+		"test": "run-p build",
 		"watch": "NODE_NO_WARNINGS=1 parcel watch --no-hmr",
 		"ci": "CI=true pnpm i"
 	},
@@ -23,12 +21,6 @@
 			"unicorn/prefer-top-level-await": "off"
 		}
 	},
-	"stylelint": {
-		"extends": [
-			"stylelint-config-xo"
-		],
-		"rules": {}
-	},
 	"dependencies": {
 		"webext-base-css": "^2.0.1",
 		"webext-options-sync": "^4.2.3"
@@ -38,9 +30,6 @@
 		"@parcel/resolver-default": "^2.13.0",
 		"npm-run-all2": "^7.0.1",
 		"parcel": "^2.13.0",
-		"stylelint": "^16.6.1",
-		"stylelint-config-prettier": "^9.0.5",
-		"stylelint-config-xo": "^1.0.2",
 		"xo": "^0.59.3"
 	},
 	"@parcel/resolver-default": {
