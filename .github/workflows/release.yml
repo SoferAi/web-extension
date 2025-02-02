@@ -87,10 +87,10 @@ jobs:
           path: ${{ env.DIRECTORY }}
           
       - name: Upload to release
-        env:
-          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
         run: |
           gh release upload ${{ needs.release-please.outputs.tag_name }} "${{ env.PROJECT_NAME }}-${{ needs.release-please.outputs.version }}.zip"
+        env:
+          GH_TOKEN: ${{ github.token }}
 
   chrome-store:
     needs: [release-please, build]
