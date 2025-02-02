@@ -88,7 +88,7 @@ jobs:
           
       - name: Upload to release
         env:
-          GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
         run: |
           gh release upload ${{ needs.release-please.outputs.tag_name }} "${{ env.PROJECT_NAME }}-${{ needs.release-please.outputs.version }}.zip"
 
