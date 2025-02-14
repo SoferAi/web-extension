@@ -15,11 +15,47 @@
 	"icons": {
 		"710": "icon.png"
 	},
-	"host_permissions": [
-		"https://github.com/*",
-		"https://www.yutorah.org/*"
+	"permissions": [
+		"storage",
+		"identity",
+		"activeTab",
+		"cookies"
 	],
+	"host_permissions": [
+		"https://*.yutorah.org/*",
+		"https://sofer.ai/*",
+		"https://*.sofer.ai/*",
+		"https://app.sofer.ai/*"
+	],
+	"content_scripts": [
+		{
+			"matches": [
+				"https://*.yutorah.org/*"
+			],
+			"js": [
+				"content.js"
+			],
+			"css": [
+				"styles.css"
+			]
+		}
+	],
+	"web_accessible_resources": [
+		{
+			"resources": [
+				"icon.png"
+			],
+			"matches": [
+				"https://*.yutorah.org/*"
+			]
+		}
+	],
+	"background": {
+		"service_worker": "background.js",
+		"type": "module"
+	},
 	"action": {
-		"default_popup": "popup.html"
+		"default_popup": "popup.html",
+		"default_icon": "icon.png"
 	}
 }
