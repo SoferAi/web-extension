@@ -1,0 +1,293 @@
+.sofer-audio-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 8px 0;
+    padding: 8px;
+    border-radius: 8px;
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+}
+
+.jp-button.sofer-transcript-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    margin: 0 4px;
+    background: none;
+    border: none;
+    color: #666;
+    font-size: 12px;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.jp-button.sofer-transcript-btn:hover {
+    color: #333;
+}
+
+.jp-button.sofer-transcript-btn img {
+    width: 16px;
+    height: 16px;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.jp-button.sofer-transcript-btn:hover img {
+    opacity: 1;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .jp-button.sofer-transcript-btn {
+        color: #999;
+    }
+
+    .jp-button.sofer-transcript-btn:hover {
+        color: #fff;
+    }
+}
+
+.sofer-transcript-btn.processing {
+    background-color: #f59e0b;
+    animation: pulse 2s infinite;
+}
+
+.sofer-transcript-btn.completed {
+    background-color: #10b981;
+}
+
+.sofer-transcript-btn.error {
+    background-color: #ef4444;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.7;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+/* Tooltip styles */
+.sofer-transcript-btn[title] {
+    position: relative;
+}
+
+.sofer-transcript-btn[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 4px 8px;
+    background-color: #1f2937;
+    color: white;
+    font-size: 12px;
+    border-radius: 4px;
+    white-space: nowrap;
+    z-index: 1000;
+    margin-bottom: 4px;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .sofer-audio-container {
+        background-color: #1f2937;
+        border-color: #374151;
+    }
+}
+
+.sofer-transcript-btn.jpSpeedControl {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 2px;
+    width: 40px;
+    height: 40px;
+    margin-left: 10px;
+    cursor: pointer;
+    border: none;
+    background: none;
+    color: #666;
+    font-size: 12px;
+    transition: all 0.2s ease-in-out;
+    position: relative;
+}
+
+.sofer-transcript-btn.jpSpeedControl img {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+    opacity: 0.7;
+    transition: opacity 0.2s ease-in-out;
+}
+
+.sofer-transcript-btn.jpSpeedControl span {
+    font-size: 11px;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.sofer-transcript-btn.jpSpeedControl:hover {
+    color: #333;
+}
+
+.sofer-transcript-btn.jpSpeedControl:hover img {
+    opacity: 1;
+}
+
+.sofer-transcript-btn.jpSpeedControl.processing {
+    color: #f59e0b;
+    animation: pulse 2s infinite;
+}
+
+.sofer-transcript-btn.jpSpeedControl.completed {
+    color: #10b981;
+}
+
+.sofer-transcript-btn.jpSpeedControl.error {
+    color: #ef4444;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.7;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .sofer-transcript-btn.jpSpeedControl {
+        color: #999;
+    }
+
+    .sofer-transcript-btn.jpSpeedControl:hover {
+        color: #fff;
+    }
+}
+
+.lecture-buttons .add li.transcript {
+    display: inline-block !important;
+    margin-left: 8px !important;
+    background: none !important;
+    border-radius: 0 !important;
+    border: none !important;
+    padding: 0 !important;
+    width: auto !important;
+    height: auto !important;
+}
+
+.lecture-buttons .add li.transcript::before,
+.lecture-buttons .add li.transcript::after {
+    display: none !important;
+    content: none !important;
+}
+
+.lecture-buttons .add li.transcript a.sofer-transcript-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    background-color: #000000 !important;
+    padding: 8px 16px !important;
+    color: white !important;
+    font-weight: 500 !important;
+    font-size: 13px !important;
+    text-decoration: none !important;
+    transition: all 0.2s ease !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    border: none !important;
+    width: auto !important;
+    height: auto !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    line-height: normal !important;
+}
+
+.lecture-buttons .add li.transcript a.sofer-transcript-btn::before,
+.lecture-buttons .add li.transcript a.sofer-transcript-btn::after {
+    display: none !important;
+    content: none !important;
+}
+
+.lecture-buttons .add li.transcript a.sofer-transcript-btn:hover {
+    background-color: #333333 !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.lecture-buttons .add li.transcript a.sofer-transcript-btn img {
+    width: 18px !important;
+    height: 18px !important;
+    object-fit: contain !important;
+}
+
+.lecture-buttons .add li.transcript a.sofer-transcript-btn span {
+    line-height: 1 !important;
+}
+
+.lecture-buttons .add li.transcript a.sofer-transcript-btn.processing {
+    background-color: #f59e0b !important;
+}
+
+.lecture-buttons .add li.transcript a.sofer-transcript-btn.completed {
+    background-color: #10b981 !important;
+}
+
+.lecture-buttons .add li.transcript a.sofer-transcript-btn.error {
+    background-color: #ef4444 !important;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.8;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .lecture-buttons .add li.transcript a.sofer-transcript-btn {
+        background-color: #3b82f6;
+    }
+
+    .lecture-buttons .add li.transcript a.sofer-transcript-btn:hover {
+        background-color: #2563eb;
+    }
+
+    .lecture-buttons .add li.transcript a.sofer-transcript-btn.processing {
+        background-color: #d97706;
+    }
+
+    .lecture-buttons .add li.transcript a.sofer-transcript-btn.completed {
+        background-color: #059669;
+    }
+
+    .lecture-buttons .add li.transcript a.sofer-transcript-btn.error {
+        background-color: #dc2626;
+    }
+}
