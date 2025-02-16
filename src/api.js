@@ -1,7 +1,30 @@
-const BASE_URL = 'https://app.sofer.ai';
+// Environment configuration
+const ENV = 'production'; // Default to production
+const getBaseUrl = () => ENV === 'development' ? 'http://localhost:3000' : 'https://app.sofer.ai';
+let BASE_URL = getBaseUrl();
 const SUPABASE_URL = 'https://auth.sofer.ai';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ2a3ZrdnBqd2Jzc2t0bWxwbWJtIiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTg3NjY5ODAsImV4cCI6MjAxNDM0Mjk4MH0.kA-I_e1HxDUV9vxE_7Pz-wZvYhKVVLCvmIRjZsPwDGE';
 const AUTH_COOKIE_NAME = 'sb-auth-auth-token';
+
+// Initialize environment from storage
+chrome.storage.local.get('environment', ({ environment }) => {
+    if (environment) {
+        ENV = environment;
+        BASE_URL = getBaseUrl();
+        console.log('Environment set to:', ENV);
+        console.log('Base URL:', BASE_URL);
+    }
+});
+
+// Function to set environment
+const setEnvironment = async (env) => {
+    ENV = env;
+    BASE_URL = getBaseUrl();
+    await chrome.storage.local.set({ environment: env });
+    console.log('Environment updated to:', env);
+    console.log('Base URL updated to:', BASE_URL);
+    return { env, baseUrl: BASE_URL };
+};
 
 // Authentication state management
 let authToken = null;
@@ -21,49 +44,52 @@ const extractAccessToken = (cookieValue) => {
         // Log the raw cookie value for debugging
         console.log('Raw cookie value:', cookieValue.substring(0, 50) + '...');
 
-        if (cookieValue.startsWith('base64-')) {
-            // Remove 'base64-' prefix
-            const base64Value = cookieValue.replace('base64-', '');
-
-            // Split into chunks to handle long base64 strings
-            const chunks = base64Value.match(/.{1,100}/g) || [];
-            console.log('Base64 chunks:', chunks.length);
-
-            try {
-                // Try to decode the base64 string
-                const decodedValue = atob(base64Value);
-                console.log('Successfully decoded base64');
-
-                // Parse the decoded JSON
-                const parsedValue = JSON.parse(decodedValue);
-                console.log('Parsed JSON structure:', Object.keys(parsedValue));
-
-                if (parsedValue.access_token) {
-                    return parsedValue.access_token;
-                } else {
-                    console.log('No access_token found in parsed value');
-                }
-            } catch (e) {
-                console.log('Base64 decode or JSON parse failed, trying direct parse');
+        // First check if it's a JWT token (regardless of prefix)
+        if (cookieValue.includes('eyJ')) {
+            // Extract the JWT token part
+            const jwtMatch = cookieValue.match(/eyJ[a-zA-Z0-9_-]+\.eyJ[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+/);
+            if (jwtMatch) {
+                console.log('Found JWT token in cookie value');
+                return jwtMatch[0];
             }
         }
 
-        // If the above fails, try parsing the cookie value directly
+        // If it has a base64 prefix but contains a JWT, strip the prefix
+        if (cookieValue.startsWith('base64-') && cookieValue.includes('eyJ')) {
+            const token = cookieValue.replace('base64-', '');
+            console.log('Stripped base64 prefix from JWT token');
+            return token;
+        }
+
+        // Try parsing as JSON directly first
         try {
             const parsedValue = JSON.parse(cookieValue);
             if (parsedValue.access_token) {
+                console.log('Found access_token in JSON cookie');
                 return parsedValue.access_token;
             }
         } catch (e) {
-            // If both methods fail, try using the cookie value directly
-            if (cookieValue.includes('eyJ')) {
-                // This looks like a JWT token, use it directly
-                console.log('Using cookie value directly as JWT token');
-                return cookieValue;
+            // Not JSON, continue to base64 attempt
+        }
+
+        // Finally, try base64 decoding if all else fails
+        if (cookieValue.startsWith('base64-')) {
+            try {
+                const base64Value = cookieValue.replace('base64-', '');
+                const decodedValue = atob(base64Value);
+                const parsedValue = JSON.parse(decodedValue);
+                console.log('Successfully decoded base64 and parsed JSON');
+
+                if (parsedValue.access_token) {
+                    return parsedValue.access_token;
+                }
+            } catch (e) {
+                console.log('Base64 decode or JSON parse failed:', e.message);
             }
         }
 
-        throw new Error('Could not extract access token from cookie value');
+        console.log('Could not extract token from cookie value');
+        return null;
     } catch (error) {
         console.error('Failed to extract access token:', error);
         return null;
@@ -152,13 +178,6 @@ const getSessionFromCookie = async () => {
     }
 };
 
-// Authentication functions
-const login = async () => {
-    // Instead of logging in, open the web app in a new tab
-    chrome.tabs.create({ url: `${BASE_URL}/sign-in` });
-    throw new Error('Please sign in through the web app');
-};
-
 // Initialize auth state from storage
 const initializeAuth = async () => {
     try {
@@ -170,29 +189,14 @@ const initializeAuth = async () => {
             return false;
         }
 
-        // Verify auth by trying to access a protected endpoint
-        console.log('Verifying session by accessing protected endpoint...');
-        const response = await fetch(`${BASE_URL}/auth/check`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${sessionCookie}`,
-                'Content-Type': 'application/json'
-            },
-            credentials: 'include'
-        });
-
-        console.log('Auth check response:', {
-            status: response.status,
-            statusText: response.statusText,
-            headers: Object.fromEntries([...response.headers.entries()])
-        });
-
-        if (response.status === 401) {
-            console.error('Session invalid - unauthorized');
-            return false;
+        // If we have a valid JWT token, consider it authenticated
+        if (sessionCookie.includes('eyJ')) {
+            console.log('Valid JWT token found');
+            return true;
         }
 
-        return true;
+        console.log('No valid JWT token found');
+        return false;
     } catch (error) {
         console.error('Auth initialization failed:', {
             error: error.message,
@@ -202,6 +206,13 @@ const initializeAuth = async () => {
     }
 };
 
+// Authentication functions
+const login = async () => {
+    // Instead of logging in, open the web app in a new tab
+    chrome.tabs.create({ url: `${BASE_URL}/sign-in` });
+    throw new Error('Please sign in through the web app');
+};
+
 // Clear auth state
 const logout = async () => {
     // Instead of logging out, open the web app in a new tab
@@ -209,7 +220,7 @@ const logout = async () => {
     await chrome.storage.local.remove(['auth', 'user']);
 };
 
-// Transcription functions
+// Create a new transcription
 const createTranscription = async (audioUrl, metadata) => {
     const accessToken = await getSessionFromCookie();
     if (!accessToken) {
@@ -249,6 +260,7 @@ const createTranscription = async (audioUrl, metadata) => {
     return data;
 };
 
+// Check transcription status
 const checkTranscriptionStatus = async (transcriptionId) => {
     const accessToken = await getSessionFromCookie();
     if (!accessToken) {
@@ -281,12 +293,14 @@ const handleApiError = (error) => {
     return { type: 'server', message: 'An unexpected error occurred' };
 };
 
-// Make functions available globally
+// Export the API interface
 window.soferApi = {
     login,
     logout,
     initializeAuth,
     createTranscription,
     checkTranscriptionStatus,
-    handleApiError
-}; 
+    handleApiError,
+    setEnvironment,
+    getEnvironment: () => ENV
+};

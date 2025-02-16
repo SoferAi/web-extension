@@ -84,31 +84,34 @@ const handleTranscriptClick = async (container, button, shiurId) => {
         button.textContent = 'Requesting...';
         button.classList.add('processing');
 
-        // Send message to background script to create transcription
-        chrome.runtime.sendMessage({
-            type: 'CREATE_TRANSCRIPTION',
-            metadata: {
-                audioUrl: metadata.audioUrl,
-                info: {
-                    title: metadata.title,
-                    primary_language: 'en',
-                    lang_for_hebrew_words: ['he'],
-                    num_speakers: 1,
-                    ...metadata,
-                }
-            }
-        }, (response) => {
-            if (response?.error) {
-                button.textContent = 'Error';
-                button.classList.remove('processing');
-                button.classList.add('error');
-                console.error('Transcription error:', response.error);
-            } else if (response?.transcriptionId) {
-                // Start polling for status
-                button.textContent = 'Processing...';
-                pollTranscriptionStatus(response.transcriptionId, button);
-            }
+        // 1. Create a transcription session
+        const sessionResponse = await window.soferApi.createTranscriptionSession({
+            title: metadata.title,
+            speaker: metadata.speaker,
+            source_url: window.location.href,
+            audio_url: metadata.audioUrl
         });
+
+        if (!sessionResponse?.sessionId) {
+            throw new Error('Failed to create transcription session');
+        }
+
+        const sessionId = sessionResponse.sessionId;
+
+        // 2. Start the transcription using the server action
+        const transcriptionResponse = await window.soferApi.startTranscription(sessionId, {
+            primaryLanguage: 'English',
+            hebrewWordsTranscription: 'Both',
+            sendEmail: true,
+            numSpeakers: 1
+        });
+
+        if (transcriptionResponse.success) {
+            button.textContent = 'Processing...';
+            pollTranscriptionStatus(sessionId, button);
+        } else {
+            throw new Error(transcriptionResponse.error || 'Failed to start transcription');
+        }
     } catch (error) {
         button.textContent = 'Error';
         button.classList.remove('processing');
@@ -118,30 +121,38 @@ const handleTranscriptClick = async (container, button, shiurId) => {
 };
 
 // Function to poll transcription status
-const pollTranscriptionStatus = (transcriptionId, button) => {
-    const checkStatus = () => {
-        chrome.runtime.sendMessage({
-            type: 'CHECK_TRANSCRIPTION',
-            transcriptionId
-        }, (response) => {
-            if (response?.error) {
+const pollTranscriptionStatus = async (sessionId, button) => {
+    const checkStatus = async () => {
+        try {
+            const response = await window.soferApi.checkTranscriptionStatus(sessionId);
+
+            if (response.error) {
                 button.textContent = 'Error';
                 button.classList.remove('processing');
                 button.classList.add('error');
                 clearInterval(pollInterval);
-            } else if (response?.status === 'completed') {
+            } else if (response.status === 'COMPLETED') {
                 button.textContent = 'View';
                 button.classList.remove('processing');
                 button.classList.add('completed');
                 button.addEventListener('click', (e) => {
                     e.preventDefault();
-                    window.open(`https://app.sofer.ai/transcript/${transcriptionId}`, '_blank');
+                    window.open(`${BASE_URL}/transcripts/${sessionId}`, '_blank');
                 }, { once: true });
                 clearInterval(pollInterval);
-            } else if (response?.status) {
-                button.textContent = `Processing (${response.status})`;
+            } else if (response.status === 'FAILED') {
+                button.textContent = 'Failed';
+                button.classList.remove('processing');
+                button.classList.add('error');
+                clearInterval(pollInterval);
+            } else {
+                // Handle PENDING, PROCESSING, etc.
+                button.textContent = `Processing (${response.status.toLowerCase()})`;
             }
-        });
+        } catch (error) {
+            console.error('Status check failed:', error);
+            // Don't clear interval on error, keep trying
+        }
     };
 
     const pollInterval = setInterval(checkStatus, 10000); // Check every 10 seconds

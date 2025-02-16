@@ -1,3 +1,31 @@
 {
-	"extends": "@parcel/config-webextension"
+	"extends": "@parcel/config-webextension",
+	"transformers": {
+		"*.{js,mjs,jsm,jsx,es6,cjs,ts,tsx}": [
+			"@parcel/transformer-js"
+		],
+		"*.json": [
+			"@parcel/transformer-json"
+		],
+		"*.css": [
+			"@parcel/transformer-css"
+		]
+	},
+	"packagers": {
+		"*.html": "@parcel/packager-html",
+		"*.js": "@parcel/packager-js",
+		"*.css": "@parcel/packager-css",
+		"*.json": "@parcel/packager-json"
+	},
+	"optimizers": {
+		"*.js": [
+			"@parcel/optimizer-js"
+		],
+		"*.css": [
+			"@parcel/optimizer-css"
+		],
+		"*.html": [
+			"@parcel/optimizer-html"
+		]
+	}
 }

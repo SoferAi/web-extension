@@ -1,8 +1,8 @@
 {
 	"$schema": "https://json.schemastore.org/chrome-manifest",
-	"name": "Sofer.Ai",
+	"name": "SoferAI YUTorah Transcriber",
 	"version": "1.0.8",
-	"description": "Sofer.Ai is a browser extension that allows you to transcribe audio and video files.",
+	"description": "Transcribe YUTorah lectures with SoferAI",
 	"homepage_url": "https://github.com/SoferAi/web-extension",
 	"manifest_version": 3,
 	"minimum_chrome_version": "121",
@@ -13,19 +13,18 @@
 		}
 	},
 	"icons": {
-		"710": "icon.png"
+		"128": "icon.png"
 	},
 	"permissions": [
-		"storage",
-		"identity",
-		"activeTab",
-		"cookies"
+		"cookies",
+		"storage"
 	],
 	"host_permissions": [
-		"https://*.yutorah.org/*",
-		"https://sofer.ai/*",
-		"https://*.sofer.ai/*",
-		"https://app.sofer.ai/*"
+		"https://app.sofer.ai/*",
+		"http://localhost:3000/*",
+		"https://auth.sofer.ai/*",
+		"https://yutorah.org/*",
+		"https://download.yutorah.org/*"
 	],
 	"content_scripts": [
 		{
@@ -51,8 +50,7 @@
 		}
 	],
 	"background": {
-		"service_worker": "background.js",
-		"type": "module"
+		"service_worker": "background.js"
 	},
 	"action": {
 		"default_popup": "popup.html",

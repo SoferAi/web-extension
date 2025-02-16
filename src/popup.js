@@ -6,9 +6,32 @@ const openDashboard = document.getElementById('openDashboard');
 const signOutButton = document.getElementById('signOutButton');
 const transcriptionList = document.getElementById('transcriptionList');
 
+// Initialize environment selector
+const initializeEnvironment = async () => {
+    const envSelect = document.getElementById('environment');
+    if (!envSelect) return;
+
+    // Get current environment from storage
+    const { environment } = await chrome.storage.local.get('environment');
+    if (environment) {
+        envSelect.value = environment;
+    }
+
+    // Listen for changes
+    envSelect.addEventListener('change', async () => {
+        const newEnv = envSelect.value;
+        const result = await window.soferApi.setEnvironment(newEnv);
+        console.log('Environment updated:', result);
+
+        // Reload extension
+        chrome.runtime.reload();
+    });
+};
+
 // Initialize popup state
 document.addEventListener('DOMContentLoaded', async () => {
     try {
+        await initializeEnvironment();
         const isAuthenticated = await window.soferApi.initializeAuth();
         console.log('Authentication state:', { isAuthenticated });
         if (isAuthenticated) {
@@ -17,7 +40,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             showLoginPrompt();
         }
     } catch (error) {
-        console.error('Auth check failed:', error);
+        console.error('Initialization failed:', error);
         showLoginPrompt();
     }
 });

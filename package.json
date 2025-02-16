@@ -1,13 +1,10 @@
 {
+	"name": "soferai-yutorah-transcriber",
 	"private": true,
-	"version": "1.1.0",
+	"version": "1.0.8",
 	"scripts": {
-		"start": "parcel watch src/manifest.json --host localhost --config @parcel/config-webextension",
-		"build": "NODE_NO_WARNINGS=1 parcel build",
-		"lint-fix": "run-p 'lint:* -- --fix'",
-		"test": "run-p build",
-		"watch": "NODE_NO_WARNINGS=1 parcel watch --no-hmr",
-		"ci": "CI=true pnpm i"
+		"clean": "rm -rf dist",
+		"build": "pnpm run clean && node build.js"
 	},
 	"browserslist": [
 		"last 1 Chrome version",
@@ -27,27 +24,21 @@
 		"webext-options-sync": "^4.2.3"
 	},
 	"devDependencies": {
-		"@parcel/config-webextension": "^2.13.0",
-		"@parcel/resolver-default": "^2.13.0",
-		"npm-run-all2": "^7.0.1",
-		"parcel": "^2.13.0",
-		"xo": "^0.60.0"
+		"@parcel/config-default": "^2.13.0",
+		"@parcel/transformer-js": "^2.13.0",
+		"@parcel/transformer-webextension": "^2.13.0",
+		"@parcel/packager-webextension": "^2.13.0",
+		"parcel": "^2.13.0"
 	},
 	"@parcel/resolver-default": {
 		"packageExports": true
 	},
 	"targets": {
-		"default": {
+		"webext": {
 			"source": "src/manifest.json",
-			"distDir": "./distribution"
-		}
-	},
-	"webExt": {
-		"sourceDir": "distribution",
-		"run": {
-			"startUrl": [
-				"https://github.com/fregante/browser-extension-template"
-			]
+			"distDir": "build",
+			"context": "browser",
+			"includeNodeModules": true
 		}
 	}
 }

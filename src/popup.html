@@ -114,6 +114,22 @@
         .transcription-item .status.error {
             color: #ef4444;
         }
+
+        .env-toggle {
+            margin-top: 16px;
+            padding: 8px;
+            background-color: #f3f4f6;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .env-toggle select {
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid #d1d5db;
+        }
     </style>
 </head>
 
@@ -135,7 +151,15 @@
                 <button id="signOutButton">Sign Out</button>
             </div>
 
-            <h2>Recent Transcriptions</h2>
+            <div class="env-toggle">
+                <label for="environment">Environment:</label>
+                <select id="environment">
+                    <option value="production">Production</option>
+                    <option value="development">Development</option>
+                </select>
+            </div>
+
+            <h2>Recent YUTorah Transcriptions</h2>
             <div id="transcriptionList" class="transcription-list">
                 <!-- Transcription items will be added here dynamically -->
             </div>
