@@ -110,7 +110,11 @@ const getSessionFromCookie = async () => {
 
         // Determine domains based on environment
         const domains = ENV === 'development'
-            ? ['http://localhost:3000']
+            ? [
+                'http://localhost:3000',
+                'https://auth.sofer.ai',  // Include auth domain in development
+                'https://app.sofer.ai'    // Include app domain in development
+            ]
             : [
                 'https://app.sofer.ai',
                 'https://sofer.ai',
@@ -205,6 +209,20 @@ const checkAuth = async () => {
 // Handle messages from content script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     console.log('[Background] Received message:', message.type, 'from tab:', sender.tab.id);
+
+    if (message.type === 'GET_AUTH_TOKEN') {
+        console.log('[Background] Processing auth token request');
+        getSessionFromCookie()
+            .then(token => {
+                console.log('[Background] Auth token found:', token ? 'yes' : 'no');
+                sendResponse({ token });
+            })
+            .catch(error => {
+                console.error('[Background] Auth token request failed:', error);
+                sendResponse({ token: null, error: error.message });
+            });
+        return true; // Keep the message channel open for async response
+    }
 
     if (message.type === 'CHECK_AUTH') {
         console.log('[Background] Processing auth check request');

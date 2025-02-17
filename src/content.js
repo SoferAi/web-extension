@@ -30,8 +30,184 @@ const createTranscriptButton = () => {
     return li;
 };
 
+// Function to check for existing transcript
+const checkExistingTranscript = async (shiurId) => {
+    try {
+        const accessToken = await new Promise((resolve, reject) => {
+            chrome.runtime.sendMessage({ type: 'GET_AUTH_TOKEN' }, response => {
+                if (chrome.runtime.lastError) {
+                    reject(chrome.runtime.lastError);
+                    return;
+                }
+                resolve(response.token);
+            });
+        });
+
+        if (!accessToken) {
+            console.log('[Content] No auth token found, skipping transcript check');
+            return null;
+        }
+
+        // Debug token
+        console.log('[Content] Token debug:', {
+            type: typeof accessToken,
+            isString: typeof accessToken === 'string',
+            length: accessToken?.length,
+            preview: typeof accessToken === 'string' ? accessToken.substring(0, 50) : 'not a string',
+            isJSON: (() => {
+                try {
+                    JSON.parse(accessToken);
+                    return true;
+                } catch (e) {
+                    return false;
+                }
+            })()
+        });
+
+        // Ensure we're using the correct origin for CORS
+        if (!window.location.hostname.endsWith('yutorah.org')) {
+            console.error('[Content] Invalid hostname:', window.location.hostname);
+            return null;
+        }
+
+        const response = await fetch(`${BASE_URL}/api/get-transcript`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': accessToken.startsWith('Bearer ') ? accessToken : `Bearer ${accessToken}`,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+                link: `https://yutorah.org/lectures/${shiurId}`
+            })
+        });
+
+        if (!response.ok) {
+            if (response.status === 404) {
+                console.log('[Content] No existing transcript found');
+                return null;
+            }
+            if (response.status === 401) {
+                console.log('[Content] Authentication failed, user needs to log in');
+                // Try to refresh auth state
+                chrome.runtime.sendMessage({ type: 'CHECK_AUTH' });
+                return null;
+            }
+            const errorData = await response.json();
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('[Content] Transcript check response:', data);
+
+        if (!data.success) {
+            console.log('[Content] Transcript check failed:', data.error);
+            return null;
+        }
+
+        return data.transcription;
+    } catch (error) {
+        console.error('[Content] Failed to check for existing transcript:', error);
+        // If it's an auth error, try to refresh auth state
+        if (error.message?.includes('401') || error.message?.includes('auth')) {
+            chrome.runtime.sendMessage({ type: 'CHECK_AUTH' });
+        }
+        return null;
+    }
+};
+
+// Function to create transcript display
+const createTranscriptDisplay = (transcription) => {
+    const container = document.createElement('div');
+    container.className = 'sofer-transcript-container';
+    container.innerHTML = `
+        <style>
+            .sofer-transcript-container {
+                margin: 20px 0;
+                padding: 20px;
+                background: #f8f9fa;
+                border-radius: 8px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .sofer-transcript-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 16px;
+                padding-bottom: 16px;
+                border-bottom: 1px solid #e2e8f0;
+            }
+            .sofer-transcript-title {
+                font-size: 1.25rem;
+                font-weight: 600;
+                color: #2d3748;
+            }
+            .sofer-transcript-content {
+                font-size: 1rem;
+                line-height: 1.6;
+                color: #4a5568;
+            }
+            .sofer-transcript-content p {
+                margin-bottom: 1em;
+            }
+            .sofer-transcript-content[dir="rtl"] {
+                text-align: right;
+            }
+            .sofer-transcript-actions {
+                display: flex;
+                gap: 8px;
+            }
+            .sofer-transcript-button {
+                padding: 6px 12px;
+                border-radius: 4px;
+                background: #3182ce;
+                color: white;
+                font-size: 0.875rem;
+                cursor: pointer;
+                border: none;
+            }
+            .sofer-transcript-button:hover {
+                background: #2c5282;
+            }
+        </style>
+        <div class="sofer-transcript-header">
+            <div class="sofer-transcript-title">Transcript</div>
+            <div class="sofer-transcript-actions">
+                <button class="sofer-transcript-button view-full">View Full Transcript</button>
+            </div>
+        </div>
+        <div class="sofer-transcript-content" dir="${transcription.primary_language === 'he' ? 'rtl' : 'ltr'}">
+            ${transcription.text || 'Transcript text not available'}
+        </div>
+    `;
+
+    // Add event listeners
+    container.querySelector('.view-full').addEventListener('click', () => {
+        window.open(`${BASE_URL}/transcripts/${transcription.id}`, '_blank');
+    });
+
+    return container;
+};
+
+// Function to add transcript to page
+const addTranscriptToPage = async (container, shiurId) => {
+    const transcription = await checkExistingTranscript(shiurId);
+    if (transcription && transcription.status === 'COMPLETED') {
+        // Find the best place to insert the transcript
+        const insertAfter = container.querySelector('.shiur-description') ||
+            container.querySelector('.lecture-buttons') ||
+            container.querySelector('h2[itemprop="name"]');
+
+        if (insertAfter && !container.querySelector('.sofer-transcript-container')) {
+            const transcriptDisplay = createTranscriptDisplay(transcription);
+            insertAfter.parentNode.insertBefore(transcriptDisplay, insertAfter.nextSibling);
+        }
+    }
+};
+
 // Function to add button to player
-const addTranscriptButton = (container) => {
+const addTranscriptButton = async (container) => {
     // Skip if we already added a button
     if (container.querySelector('.sofer-transcript-btn')) {
         return;
@@ -49,18 +225,36 @@ const addTranscriptButton = (container) => {
         return;
     }
 
-    const button = createTranscriptButton();
-    buttonsList.insertBefore(button, playLaterButton.nextSibling);
-
     // Get the shiur ID from the player container
     const playerContainer = container.querySelector('.jp-audio');
     const shiurId = playerContainer?.getAttribute('data-id');
 
     if (shiurId) {
-        button.querySelector('a').addEventListener('click', (e) => {
-            e.preventDefault();
-            handleTranscriptClick(container, button.querySelector('a'), shiurId);
-        });
+        // Check for existing transcript
+        const transcript = await checkExistingTranscript(shiurId);
+        const button = createTranscriptButton();
+        const buttonLink = button.querySelector('a');
+
+        if (transcript && transcript.status === 'COMPLETED') {
+            // Update button text and icon
+            buttonLink.querySelector('span').textContent = 'View Transcript';
+            buttonLink.classList.add('has-transcript');
+
+            // Add click handler for viewing transcript
+            buttonLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                showTranscriptPopup(transcript);
+            });
+        } else {
+            // Regular Get Transcript button behavior
+            buttonLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                handleTranscriptClick(container, buttonLink, shiurId);
+            });
+        }
+
+        buttonsList.insertBefore(button, playLaterButton.nextSibling);
     }
 
     // Log successful button addition
@@ -430,4 +624,133 @@ chrome.runtime.onMessage.addListener((message) => {
             }
         });
     }
-}); 
+});
+
+// Function to show transcript popup
+const showTranscriptPopup = (transcript) => {
+    // Remove any existing popup
+    const existingPopup = document.querySelector('.sofer-transcript-popup');
+    if (existingPopup) {
+        existingPopup.remove();
+    }
+
+    // Create popup container
+    const popup = document.createElement('div');
+    popup.className = 'sofer-transcript-popup';
+    popup.innerHTML = `
+        <style>
+            .sofer-transcript-popup {
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: 80%;
+                max-width: 800px;
+                max-height: 80vh;
+                background: white;
+                padding: 20px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                z-index: 10000;
+                display: flex;
+                flex-direction: column;
+            }
+            .sofer-transcript-popup-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 16px;
+                padding-bottom: 16px;
+                border-bottom: 1px solid #e2e8f0;
+            }
+            .sofer-transcript-popup-title {
+                font-size: 1.25rem;
+                font-weight: 600;
+                color: #2d3748;
+                margin-right: 20px;
+            }
+            .sofer-transcript-popup-close {
+                background: none;
+                border: none;
+                font-size: 1.5rem;
+                cursor: pointer;
+                color: #4a5568;
+                padding: 4px;
+                line-height: 1;
+            }
+            .sofer-transcript-popup-content {
+                flex: 1;
+                overflow-y: auto;
+                font-size: 1rem;
+                line-height: 1.6;
+                color: #4a5568;
+                padding: 16px 0;
+            }
+            .sofer-transcript-popup-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0,0,0,0.5);
+                z-index: 9999;
+            }
+            .sofer-transcript-popup-actions {
+                margin-top: 16px;
+                padding-top: 16px;
+                border-top: 1px solid #e2e8f0;
+                display: flex;
+                justify-content: flex-end;
+                gap: 8px;
+            }
+            .sofer-transcript-popup-button {
+                padding: 8px 16px;
+                border-radius: 4px;
+                background: #3182ce;
+                color: white;
+                border: none;
+                cursor: pointer;
+                font-size: 14px;
+            }
+            .sofer-transcript-popup-button:hover {
+                background: #2c5282;
+            }
+            .sofer-transcript-popup-content p {
+                margin-bottom: 1em;
+            }
+        </style>
+        <div class="sofer-transcript-popup-overlay"></div>
+        <div class="sofer-transcript-popup-header">
+            <div class="sofer-transcript-popup-title">${transcript.title || 'Transcript'}</div>
+            <button class="sofer-transcript-popup-close">&times;</button>
+        </div>
+        <div class="sofer-transcript-popup-content">
+            ${transcript.html || transcript.text || 'Transcript text not available'}
+        </div>
+        <div class="sofer-transcript-popup-actions">
+            <button class="sofer-transcript-popup-button view-full">View Full Transcript</button>
+        </div>
+    `;
+
+    // Add event listeners
+    popup.querySelector('.sofer-transcript-popup-close').addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        popup.remove();
+    });
+
+    popup.querySelector('.sofer-transcript-popup-overlay').addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        popup.remove();
+    });
+
+    popup.querySelector('.view-full').addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        window.open(`${BASE_URL}/transcripts/${transcript.id}`, '_blank');
+    });
+
+    // Add to page
+    document.body.appendChild(popup);
+}; 
