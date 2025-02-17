@@ -1,3 +1,18 @@
+// Environment configuration
+const getBaseUrl = () => ENV === 'development' ? 'http://localhost:3000' : 'https://app.sofer.ai';
+let ENV = 'production'; // Default to production
+let BASE_URL = getBaseUrl();
+
+// Initialize environment from storage
+chrome.storage.local.get('environment', ({ environment }) => {
+    if (environment) {
+        ENV = environment;
+        BASE_URL = getBaseUrl();
+        console.log('[Content] Environment set to:', ENV);
+        console.log('[Content] Base URL:', BASE_URL);
+    }
+});
+
 // Simple function to create the transcript button
 const createTranscriptButton = () => {
     const li = document.createElement('li');
@@ -63,7 +78,7 @@ const extractMetadata = (container, shiurId) => {
     const speaker = speakerElement ? speakerElement.textContent.trim() : 'Unknown Speaker';
 
     // Construct the audio URL
-    const audioUrl = `https://download.yutorah.org/audio/${shiurId}.mp3`;
+    const audioUrl = `https://yutorah.org/lectures/${shiurId}`;
 
     return {
         title,
@@ -78,85 +93,244 @@ const extractMetadata = (container, shiurId) => {
 // Function to handle transcript button click
 const handleTranscriptClick = async (container, button, shiurId) => {
     try {
+        console.log('[Content] Transcript button clicked for shiur:', shiurId);
         const metadata = extractMetadata(container, shiurId);
+        console.log('[Content] Extracted metadata:', metadata);
+
+        // Store the request state before making the request
+        await chrome.storage.local.set({
+            pendingTranscription: {
+                shiurId,
+                metadata,
+                timestamp: Date.now()
+            }
+        });
 
         // Update button state
         button.textContent = 'Requesting...';
         button.classList.add('processing');
 
-        // 1. Create a transcription session
-        const sessionResponse = await window.soferApi.createTranscriptionSession({
-            title: metadata.title,
-            speaker: metadata.speaker,
-            source_url: window.location.href,
-            audio_url: metadata.audioUrl
+        // Send message to background script to create transcription
+        console.log('[Content] Sending CREATE_TRANSCRIPTION message to background');
+
+        const response = await new Promise((resolve, reject) => {
+            chrome.runtime.sendMessage(
+                {
+                    type: 'CREATE_TRANSCRIPTION',
+                    metadata: metadata
+                },
+                response => {
+                    if (chrome.runtime.lastError) {
+                        reject(new Error(chrome.runtime.lastError.message));
+                        return;
+                    }
+                    resolve(response);
+                }
+            );
         });
 
-        if (!sessionResponse?.sessionId) {
-            throw new Error('Failed to create transcription session');
+        // Clear the pending state since we got a response
+        await chrome.storage.local.remove('pendingTranscription');
+
+        console.log('[Content] Received response from background:', response);
+
+        if (!response) {
+            throw new Error('No response received from background');
         }
 
-        const sessionId = sessionResponse.sessionId;
+        if (response.error) {
+            throw new Error(response.error);
+        }
 
-        // 2. Start the transcription using the server action
-        const transcriptionResponse = await window.soferApi.startTranscription(sessionId, {
-            primaryLanguage: 'English',
-            hebrewWordsTranscription: 'Both',
-            sendEmail: true,
-            numSpeakers: 1
-        });
-
-        if (transcriptionResponse.success) {
+        if (response.transcriptionId) {
+            console.log('[Content] Transcription created:', response.transcriptionId);
+            // Store the successful transcription
+            await chrome.storage.local.set({
+                lastTranscription: {
+                    id: response.transcriptionId,
+                    metadata,
+                    timestamp: Date.now()
+                }
+            });
             button.textContent = 'Processing...';
-            pollTranscriptionStatus(sessionId, button);
-        } else {
-            throw new Error(transcriptionResponse.error || 'Failed to start transcription');
+            pollTranscriptionStatus(response.transcriptionId, button);
         }
     } catch (error) {
+        console.error('[Content] Failed to handle transcript click:', error);
+
+        // Store error state
+        await chrome.storage.local.set({
+            transcriptionError: {
+                shiurId,
+                error: error.message,
+                timestamp: Date.now()
+            }
+        });
+
+        if (error.message?.includes('Extension context invalidated')) {
+            console.log('[Content] Extension context invalidated, page will reload...');
+            window.location.reload();
+            return;
+        }
+
         button.textContent = 'Error';
         button.classList.remove('processing');
         button.classList.add('error');
-        console.error('Transcription request failed:', error);
+    }
+};
+
+// Function to recover from extension context invalidation
+const recoverFromInvalidation = async () => {
+    try {
+        // Check for pending transcription
+        const { pendingTranscription } = await chrome.storage.local.get('pendingTranscription');
+        if (pendingTranscription) {
+            console.log('[Content] Found pending transcription, attempting to recover...');
+
+            // Only recover if the request is less than 5 minutes old
+            if (Date.now() - pendingTranscription.timestamp < 5 * 60 * 1000) {
+                const container = document.querySelector('.profile-section');
+                if (container) {
+                    const button = container.querySelector('.sofer-transcript-btn');
+                    if (button) {
+                        console.log('[Content] Retrying transcription request...');
+                        await handleTranscriptClick(container, button, pendingTranscription.shiurId);
+                        return;
+                    }
+                }
+            }
+
+            // Clean up old pending state
+            await chrome.storage.local.remove('pendingTranscription');
+        }
+
+        // Check for last error
+        const { transcriptionError } = await chrome.storage.local.get('transcriptionError');
+        if (transcriptionError) {
+            // Only handle errors from the last 5 minutes
+            if (Date.now() - transcriptionError.timestamp < 5 * 60 * 1000) {
+                console.log('[Content] Found recent error, updating UI...');
+                const container = document.querySelector('.profile-section');
+                if (container) {
+                    const button = container.querySelector('.sofer-transcript-btn');
+                    if (button) {
+                        button.textContent = 'Error';
+                        button.classList.add('error');
+                    }
+                }
+            }
+            await chrome.storage.local.remove('transcriptionError');
+        }
+    } catch (error) {
+        console.error('[Content] Failed to recover from invalidation:', error);
     }
 };
 
 // Function to poll transcription status
-const pollTranscriptionStatus = async (sessionId, button) => {
+const pollTranscriptionStatus = async (transcriptionId, button) => {
+    console.log('[Content] Starting to poll status for:', transcriptionId);
+
+    const sendStatusCheck = async (retryCount = 0) => {
+        try {
+            return await new Promise((resolve, reject) => {
+                chrome.runtime.sendMessage(
+                    {
+                        type: 'CHECK_TRANSCRIPTION_STATUS',
+                        transcriptionId: transcriptionId
+                    },
+                    response => {
+                        if (chrome.runtime.lastError) {
+                            // Check if it's an invalidated context error
+                            if (chrome.runtime.lastError.message.includes('Extension context invalidated')) {
+                                console.log('[Content] Extension context invalidated during status check, reloading page...');
+                                window.location.reload();
+                                return;
+                            }
+                            reject(chrome.runtime.lastError);
+                            return;
+                        }
+                        resolve(response);
+                    }
+                );
+            });
+        } catch (error) {
+            console.error('[Content] Status check request failed:', error);
+            if (retryCount < 2) {
+                console.log(`[Content] Retrying status check (attempt ${retryCount + 1})...`);
+                await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retry
+                return sendStatusCheck(retryCount + 1);
+            }
+            throw error;
+        }
+    };
+
     const checkStatus = async () => {
         try {
-            const response = await window.soferApi.checkTranscriptionStatus(sessionId);
+            const response = await sendStatusCheck();
+            console.log('[Content] Status check response:', response);
+
+            if (!response) {
+                throw new Error('Empty response received');
+            }
 
             if (response.error) {
-                button.textContent = 'Error';
-                button.classList.remove('processing');
-                button.classList.add('error');
-                clearInterval(pollInterval);
-            } else if (response.status === 'COMPLETED') {
-                button.textContent = 'View';
-                button.classList.remove('processing');
-                button.classList.add('completed');
-                button.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    window.open(`${BASE_URL}/transcripts/${sessionId}`, '_blank');
-                }, { once: true });
-                clearInterval(pollInterval);
-            } else if (response.status === 'FAILED') {
-                button.textContent = 'Failed';
-                button.classList.remove('processing');
-                button.classList.add('error');
-                clearInterval(pollInterval);
-            } else {
-                // Handle PENDING, PROCESSING, etc.
-                button.textContent = `Processing (${response.status.toLowerCase()})`;
+                console.error('[Content] Status check failed:', response.error);
+                // Only update UI if it's a permanent error
+                if (response.error.includes('not found') || response.error.includes('Failed to parse')) {
+                    button.textContent = 'Error';
+                    button.classList.remove('processing');
+                    button.classList.add('error');
+                    clearInterval(pollInterval);
+                }
+                return;
+            }
+
+            // Handle different status cases
+            switch (response.status) {
+                case 'COMPLETED':
+                    console.log('[Content] Transcription completed');
+                    button.textContent = 'View';
+                    button.classList.remove('processing');
+                    button.classList.add('completed');
+                    button.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        window.open(`${BASE_URL}/transcript/${transcriptionId}`, '_blank');
+                    }, { once: true });
+                    clearInterval(pollInterval);
+                    break;
+
+                case 'FAILED':
+                    console.error('[Content] Transcription failed');
+                    button.textContent = 'Failed';
+                    button.classList.remove('processing');
+                    button.classList.add('error');
+                    clearInterval(pollInterval);
+                    break;
+
+                default:
+                    console.log('[Content] Transcription in progress:', response.status);
+                    button.textContent = `Processing (${response.status.toLowerCase()})`;
+                    break;
             }
         } catch (error) {
-            console.error('Status check failed:', error);
-            // Don't clear interval on error, keep trying
+            console.error('[Content] Status check failed:', error);
+            if (error.message?.includes('Extension context invalidated')) {
+                clearInterval(pollInterval);
+                window.location.reload();
+                return;
+            }
+            // For other errors, we'll keep polling but update the UI
+            button.textContent = 'Checking...';
         }
     };
 
     const pollInterval = setInterval(checkStatus, 10000); // Check every 10 seconds
-    checkStatus(); // Check immediately
+    await checkStatus(); // Check immediately and await the result
+
+    // Clean up interval when page unloads
+    window.addEventListener('unload', () => {
+        clearInterval(pollInterval);
+    });
 };
 
 // Initialize and add buttons to existing players
@@ -186,18 +360,53 @@ const observer = new MutationObserver((mutations) => {
     });
 });
 
-// Start observing
-observer.observe(document.body, {
-    childList: true,
-    subtree: true
-});
+// Function to start observing
+const startObserving = () => {
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+    console.log('[Content] Started observing DOM for new players');
+};
+
+// Function to initialize the extension
+const initializeExtension = async () => {
+    console.log('[Content] Initializing extension...');
+    try {
+        // First try to recover from any previous invalidation
+        await recoverFromInvalidation();
+
+        // Check authentication
+        const response = await new Promise((resolve, reject) => {
+            chrome.runtime.sendMessage({ type: 'CHECK_AUTH' }, response => {
+                if (chrome.runtime.lastError) {
+                    reject(chrome.runtime.lastError);
+                    return;
+                }
+                resolve(response);
+            });
+        });
+
+        if (response && response.isAuthenticated) {
+            console.log('[Content] User is authenticated, initializing players');
+            initializePlayers();
+            startObserving();
+            // Also try again after a short delay to catch dynamically loaded content
+            setTimeout(initializePlayers, 1000);
+        } else {
+            console.log('[Content] User not authenticated. Transcript buttons will not be added.');
+        }
+    } catch (error) {
+        console.error('[Content] Failed to initialize extension:', error);
+        if (error.message?.includes('Extension context invalidated')) {
+            window.location.reload();
+        }
+    }
+};
 
 // Initialize on page load
-console.log('Content script loaded, initializing...');
-initializePlayers();
-
-// Also try again after a short delay to catch dynamically loaded content
-setTimeout(initializePlayers, 1000);
+console.log('[Content] Content script loaded, starting initialization...');
+initializeExtension();
 
 // Listen for messages from background script
 chrome.runtime.onMessage.addListener((message) => {
@@ -220,14 +429,5 @@ chrome.runtime.onMessage.addListener((message) => {
                 button.classList.add('processing');
             }
         });
-    }
-});
-
-// Check authentication and initialize
-chrome.runtime.sendMessage({ type: 'CHECK_AUTH' }, (response) => {
-    if (response && response.isAuthenticated) {
-        initObserver();
-    } else {
-        console.log('User not authenticated. Transcript buttons will not be added.');
     }
 }); 

@@ -6,48 +6,18 @@ const openDashboard = document.getElementById('openDashboard');
 const signOutButton = document.getElementById('signOutButton');
 const transcriptionList = document.getElementById('transcriptionList');
 
-// Initialize environment selector
-const initializeEnvironment = async () => {
-    const envSelect = document.getElementById('environment');
-    if (!envSelect) return;
-
-    // Get current environment from storage
-    const { environment } = await chrome.storage.local.get('environment');
-    if (environment) {
-        envSelect.value = environment;
-        await window.soferApi.setEnvironment(environment);
-    } else {
-        // Default to development
-        await window.soferApi.setEnvironment('development');
-        envSelect.value = 'development';
-    }
-
-    // Listen for changes
-    envSelect.addEventListener('change', async () => {
-        const newEnv = envSelect.value;
-        console.log('Changing environment to:', newEnv);
-        const result = await window.soferApi.setEnvironment(newEnv);
-        console.log('Environment updated:', result);
-
-        // Reload extension
-        chrome.runtime.reload();
-    });
-};
-
 // Initialize popup state
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        await initializeEnvironment();
         const isAuthenticated = await window.soferApi.initializeAuth();
         console.log('Authentication state:', { isAuthenticated });
-
         if (isAuthenticated) {
             showAuthenticatedState();
         } else {
             showLoginPrompt();
         }
     } catch (error) {
-        console.error('Initialization failed:', error);
+        console.error('Auth check failed:', error);
         showLoginPrompt();
     }
 });
@@ -55,7 +25,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 // Handle sign in button click
 signInButton.addEventListener('click', async () => {
     try {
-        await window.soferApi.login();
+        await window.soferApi.login(); // This will open the sign-in page
     } catch (error) {
         console.error('Sign in failed:', error);
     }
@@ -63,16 +33,13 @@ signInButton.addEventListener('click', async () => {
 
 // Handle open dashboard button
 openDashboard.addEventListener('click', () => {
-    const baseUrl = window.soferApi.getEnvironment() === 'development'
-        ? 'http://localhost:3000'
-        : 'https://app.sofer.ai';
-    chrome.tabs.create({ url: `${baseUrl}/dashboard` });
+    chrome.tabs.create({ url: 'https://app.sofer.ai/dashboard' });
 });
 
 // Handle sign out button
 signOutButton.addEventListener('click', async () => {
     try {
-        await window.soferApi.logout();
+        await window.soferApi.logout(); // This will open the sign-out page
         showLoginPrompt();
     } catch (error) {
         console.error('Sign out failed:', error);
@@ -128,11 +95,8 @@ function updateTranscriptionList(transcriptions) {
 
         if (data.status === 'completed') {
             item.addEventListener('click', () => {
-                const baseUrl = window.soferApi.getEnvironment() === 'development'
-                    ? 'http://localhost:3000'
-                    : 'https://app.sofer.ai';
                 chrome.tabs.create({
-                    url: `${baseUrl}/transcripts/${data.id}`,
+                    url: `https://app.sofer.ai/transcript/${data.id}`,
                 });
             });
             item.style.cursor = 'pointer';

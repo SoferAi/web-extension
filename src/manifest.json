@@ -20,10 +20,9 @@
 		"storage"
 	],
 	"host_permissions": [
-		"https://app.sofer.ai/*",
+		"*://*.sofer.ai/*",
 		"http://localhost:3000/*",
-		"https://auth.sofer.ai/*",
-		"https://yutorah.org/*",
+		"https://*.yutorah.org/*",
 		"https://download.yutorah.org/*"
 	],
 	"content_scripts": [

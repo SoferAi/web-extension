@@ -1,9 +1,8 @@
 // Environment configuration
-const ENV = 'production'; // Default to production
+let ENV = 'development'; // Default to development
 const getBaseUrl = () => ENV === 'development' ? 'http://localhost:3000' : 'https://app.sofer.ai';
 let BASE_URL = getBaseUrl();
 const SUPABASE_URL = 'https://auth.sofer.ai';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ2a3ZrdnBqd2Jzc2t0bWxwbWJtIiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTg3NjY5ODAsImV4cCI6MjAxNDM0Mjk4MH0.kA-I_e1HxDUV9vxE_7Pz-wZvYhKVVLCvmIRjZsPwDGE';
 const AUTH_COOKIE_NAME = 'sb-auth-auth-token';
 
 // Initialize environment from storage
@@ -26,151 +25,75 @@ const setEnvironment = async (env) => {
     return { env, baseUrl: BASE_URL };
 };
 
-// Authentication state management
-let authToken = null;
-
-// Helper function to handle API responses
-const handleResponse = async (response) => {
-    if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-        throw new Error(error.message || `HTTP error! status: ${response.status}`);
-    }
-    return response.json();
-};
-
-// Helper function to extract access token from cookie value
-const extractAccessToken = (cookieValue) => {
-    try {
-        // Log the raw cookie value for debugging
-        console.log('Raw cookie value:', cookieValue.substring(0, 50) + '...');
-
-        // First check if it's a JWT token (regardless of prefix)
-        if (cookieValue.includes('eyJ')) {
-            // Extract the JWT token part
-            const jwtMatch = cookieValue.match(/eyJ[a-zA-Z0-9_-]+\.eyJ[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+/);
-            if (jwtMatch) {
-                console.log('Found JWT token in cookie value');
-                return jwtMatch[0];
-            }
-        }
-
-        // If it has a base64 prefix but contains a JWT, strip the prefix
-        if (cookieValue.startsWith('base64-') && cookieValue.includes('eyJ')) {
-            const token = cookieValue.replace('base64-', '');
-            console.log('Stripped base64 prefix from JWT token');
-            return token;
-        }
-
-        // Try parsing as JSON directly first
-        try {
-            const parsedValue = JSON.parse(cookieValue);
-            if (parsedValue.access_token) {
-                console.log('Found access_token in JSON cookie');
-                return parsedValue.access_token;
-            }
-        } catch (e) {
-            // Not JSON, continue to base64 attempt
-        }
-
-        // Finally, try base64 decoding if all else fails
-        if (cookieValue.startsWith('base64-')) {
-            try {
-                const base64Value = cookieValue.replace('base64-', '');
-                const decodedValue = atob(base64Value);
-                const parsedValue = JSON.parse(decodedValue);
-                console.log('Successfully decoded base64 and parsed JSON');
-
-                if (parsedValue.access_token) {
-                    return parsedValue.access_token;
-                }
-            } catch (e) {
-                console.log('Base64 decode or JSON parse failed:', e.message);
-            }
-        }
-
-        console.log('Could not extract token from cookie value');
-        return null;
-    } catch (error) {
-        console.error('Failed to extract access token:', error);
-        return null;
-    }
-};
-
 // Helper function to get session cookie
 const getSessionFromCookie = async () => {
     try {
-        // Use exact cookie names we see in the browser from Supabase
         const cookieNames = [
             'sb-auth-auth-token.0',
-            'sb-auth-auth-token.1'
+            'sb-auth-auth-token.1',
+            'sb-auth-auth-token',
+            'supabase-auth-token'
         ];
-        const domains = [BASE_URL, 'https://sofer.ai', SUPABASE_URL];
 
-        console.log('Starting cookie search across domains with names:', cookieNames);
+        const url = ENV === 'development' ? 'http://localhost:3000' : 'https://app.sofer.ai';
+        console.log('Looking for cookies at:', url);
 
-        for (const domain of domains) {
-            console.log(`Checking domain: ${domain}`);
-            for (const cookieName of cookieNames) {
-                const cookie = await chrome.cookies.get({
-                    url: domain,
-                    name: cookieName
-                });
+        for (const cookieName of cookieNames) {
+            const cookie = await chrome.cookies.get({
+                url,
+                name: cookieName
+            });
 
-                if (cookie) {
-                    console.log(`Cookie found on ${new URL(domain).hostname}:`, {
-                        name: cookieName,
-                        domain: cookie.domain,
-                        path: cookie.path,
-                        secure: cookie.secure,
-                        httpOnly: cookie.httpOnly,
-                        value: cookie.value ? cookie.value.substring(0, 20) + '...' : 'empty'
-                    });
+            if (cookie && cookie.value) {
+                console.log(`Found cookie ${cookieName}:`, cookie.value.substring(0, 50) + '...');
 
-                    if (cookie.value) {
-                        // For base64 encoded cookies
-                        if (cookie.value.startsWith('base64-')) {
-                            try {
-                                const base64Value = cookie.value.replace('base64-', '');
-                                console.log('Attempting to decode base64 value...');
-                                const decodedValue = atob(base64Value);
-                                console.log('Successfully decoded base64, attempting to parse JSON...');
-                                const parsedValue = JSON.parse(decodedValue);
-                                console.log('Successfully parsed JSON:', Object.keys(parsedValue));
+                // Handle base64 encoded cookie
+                if (cookie.value.startsWith('base64-')) {
+                    try {
+                        const base64Value = cookie.value.replace('base64-', '');
+                        const decodedValue = atob(base64Value);
+                        const parsedValue = JSON.parse(decodedValue);
+                        console.log('Decoded cookie contains:', Object.keys(parsedValue));
 
-                                // Try various token fields that Supabase might use
-                                const token = parsedValue.access_token || parsedValue.token || parsedValue.currentSession?.access_token;
-                                if (token) {
-                                    console.log('Found token in parsed value');
-                                    return token;
-                                }
-                            } catch (e) {
-                                console.log('Failed to process base64 cookie:', e.message);
-                            }
+                        // For Supabase session cookie
+                        if (parsedValue.currentSession?.access_token) {
+                            console.log('Found access_token in currentSession');
+                            return parsedValue.currentSession.access_token;
                         }
-
-                        // For direct JWT tokens
-                        if (cookie.value.includes('eyJ')) {
-                            console.log('Using cookie value directly as JWT token');
-                            return cookie.value;
+                        // For direct access token
+                        if (parsedValue.access_token) {
+                            console.log('Found access_token in cookie');
+                            return parsedValue.access_token;
                         }
-
-                        // Try parsing as JSON directly
-                        try {
-                            const parsedValue = JSON.parse(cookie.value);
-                            const token = parsedValue.access_token || parsedValue.token || parsedValue.currentSession?.access_token;
-                            if (token) {
-                                console.log('Found token in JSON cookie');
-                                return token;
-                            }
-                        } catch (e) {
-                            // Not JSON, skip
-                        }
+                    } catch (e) {
+                        console.error('Failed to decode base64 cookie:', e);
                     }
+                }
+
+                // Handle direct JWT token
+                if (cookie.value.includes('eyJ')) {
+                    console.log('Found JWT token directly in cookie');
+                    return cookie.value;
+                }
+
+                // Try parsing as JSON directly
+                try {
+                    const parsedValue = JSON.parse(cookie.value);
+                    if (parsedValue.currentSession?.access_token) {
+                        console.log('Found access_token in currentSession');
+                        return parsedValue.currentSession.access_token;
+                    }
+                    if (parsedValue.access_token) {
+                        console.log('Found access_token in cookie');
+                        return parsedValue.access_token;
+                    }
+                } catch (e) {
+                    // Not JSON, continue to next cookie
                 }
             }
         }
 
-        console.log('No valid auth cookie found after checking all domains and names');
+        console.log('No valid auth cookie found');
         return null;
     } catch (error) {
         console.error('Error getting cookie:', error);
@@ -182,82 +105,86 @@ const getSessionFromCookie = async () => {
 const initializeAuth = async () => {
     try {
         const sessionCookie = await getSessionFromCookie();
-        console.log('Session cookie found:', sessionCookie ? 'yes (length: ' + sessionCookie.length + ')' : 'no');
-
-        if (!sessionCookie) {
-            console.log('No session cookie found');
-            return false;
-        }
-
-        // If we have a valid JWT token, consider it authenticated
-        if (sessionCookie.includes('eyJ')) {
-            console.log('Valid JWT token found');
-            return true;
-        }
-
-        console.log('No valid JWT token found');
-        return false;
+        console.log('Session cookie found:', sessionCookie ? 'yes' : 'no');
+        return !!sessionCookie;
     } catch (error) {
-        console.error('Auth initialization failed:', {
-            error: error.message,
-            stack: error.stack
-        });
+        console.error('Auth initialization failed:', error);
         return false;
     }
 };
 
 // Authentication functions
 const login = async () => {
-    // Instead of logging in, open the web app in a new tab
     chrome.tabs.create({ url: `${BASE_URL}/sign-in` });
     throw new Error('Please sign in through the web app');
 };
 
-// Clear auth state
 const logout = async () => {
-    // Instead of logging out, open the web app in a new tab
     chrome.tabs.create({ url: `${BASE_URL}/sign-out` });
     await chrome.storage.local.remove(['auth', 'user']);
 };
 
 // Create a new transcription
 const createTranscription = async (audioUrl, metadata) => {
-    const accessToken = await getSessionFromCookie();
-    if (!accessToken) {
+    const token = await getSessionFromCookie();
+    if (!token) {
         throw new Error('Not authenticated');
     }
 
-    const response = await fetch(`${BASE_URL}/transcribe`, {
+    console.log('Making transcription request to:', `${BASE_URL}/api/transcribe`);
+    console.log('Using token:', token.substring(0, 20) + '...');
+
+    const response = await fetch(`${BASE_URL}/api/transcribe`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${accessToken}`
+            'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}`,
+            'X-Requested-With': 'XMLHttpRequest'
         },
         credentials: 'include',
         body: JSON.stringify({
             audioUrl,
-            info: {
-                title: metadata.title,
-                primary_language: 'en',
-                lang_for_hebrew_words: ['he'],
-                num_speakers: 1,
-                ...metadata,
-            },
-        }),
+            title: metadata.title,
+            speaker: metadata.speaker,
+            options: {
+                primaryLanguage: 'English',
+                hebrewWordsTranscription: 'Both',
+                sendEmail: true,
+                numSpeakers: metadata.num_speakers || 1
+            }
+        })
     });
 
-    const data = await handleResponse(response);
+    if (!response.ok) {
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            const error = await response.json();
+            throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        } else {
+            const text = await response.text();
+            throw new Error(`HTTP error! status: ${response.status}, body: ${text.substring(0, 200)}`);
+        }
+    }
 
-    // Store transcription data
-    const transcriptions = await chrome.storage.local.get('transcriptions') || {};
-    transcriptions[audioUrl] = {
-        id: data.id,
-        status: 'pending',
-        created: Date.now(),
-    };
-    await chrome.storage.local.set({ transcriptions });
+    try {
+        const data = await response.json();
+        console.log('Transcription created:', data);
 
-    return data;
+        // Store transcription data
+        const { transcriptions = {} } = await chrome.storage.local.get('transcriptions');
+        transcriptions[audioUrl] = {
+            id: data.id || data.sessionId,
+            status: 'pending',
+            created: Date.now(),
+            title: metadata.title
+        };
+        await chrome.storage.local.set({ transcriptions });
+
+        return data;
+    } catch (error) {
+        console.error('Failed to parse response:', error);
+        throw new Error('Failed to parse server response');
+    }
 };
 
 // Check transcription status
@@ -276,6 +203,21 @@ const checkTranscriptionStatus = async (transcriptionId) => {
     });
 
     return handleResponse(response);
+};
+
+// Helper function to handle API responses
+const handleResponse = async (response) => {
+    if (!response.ok) {
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            const error = await response.json();
+            throw new Error(error.message || `HTTP error! status: ${response.status}`);
+        } else {
+            const text = await response.text();
+            throw new Error(`HTTP error! status: ${response.status}, body: ${text.substring(0, 200)}`);
+        }
+    }
+    return response.json();
 };
 
 // Error handling middleware
