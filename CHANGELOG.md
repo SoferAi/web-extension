@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.1](https://github.com/SoferAi/web-extension/compare/v1.1.0...v1.1.1) (2025-02-19)
+
+
+### Bug Fixes
+
+* better gitignore ([#35](https://github.com/SoferAi/web-extension/issues/35)) ([d2a885f](https://github.com/SoferAi/web-extension/commit/d2a885f2dbe31499ad9c7e398c3f8ec6056e9ea6))
+* remove identity permissions ([#38](https://github.com/SoferAi/web-extension/issues/38)) ([b8c2179](https://github.com/SoferAi/web-extension/commit/b8c21790b9366f50e6303e90f99f9a9eaf5bd0a5))
+
 ## [1.1.0](https://github.com/SoferAi/web-extension/compare/v1.0.8...v1.1.0) (2025-02-14)
 
 
