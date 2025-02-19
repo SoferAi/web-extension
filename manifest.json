@@ -17,7 +17,6 @@
     },
     "permissions": [
         "storage",
-        "identity",
         "activeTab",
         "cookies"
     ],
