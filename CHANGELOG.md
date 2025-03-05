@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/SoferAi/web-extension/compare/v1.1.1...v1.1.2) (2025-03-05)
+
+
+### Bug Fixes
+
+* update correct version ([#39](https://github.com/SoferAi/web-extension/issues/39)) ([0d5df30](https://github.com/SoferAi/web-extension/commit/0d5df30fb1ebc9dbd0e0f99e09746233d16f560f))
+
 ## [1.1.1](https://github.com/SoferAi/web-extension/compare/v1.1.0...v1.1.1) (2025-02-19)
 
 
