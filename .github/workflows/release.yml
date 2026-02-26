@@ -81,7 +81,7 @@ jobs:
           zip -r "../${{ env.PROJECT_NAME }}-${{ needs.release-please.outputs.version }}.zip" ./*
           
       - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: extension-dist
           path: ${{ env.DIRECTORY }}
@@ -105,7 +105,7 @@ jobs:
           version: latest
           run_install: false
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: extension-dist
           
@@ -131,7 +131,7 @@ jobs:
           version: latest
           run_install: false
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: extension-dist
           
